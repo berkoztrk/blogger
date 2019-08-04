@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www"
+    "start": "nodemon ./bin/www",
+    "debug":"nodemon --nolazy --inspect-brk=9229 ./bin/www"
   },
   "dependencies": {
     "bcrpyt": "^2.0.0",

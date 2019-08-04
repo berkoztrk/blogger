@@ -49,10 +49,11 @@ router.post("/login", (req, res) => {
         else if (user) {
           var token = jwt.sign({
             username: user.username,
-            email: user.email
+            email: user.email,
+            id: user.id
           }, process.env.JWT_SECRET);
           res.json({
-            id: user._id,
+            id: user.id,
             username: user.username,
             token: token,
             message: "Login success"

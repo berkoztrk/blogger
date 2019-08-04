@@ -409,6 +409,11 @@ Vue.component('loginregistermodal', {
 })
 
 const profilePage = Vue.component("profilePage", Vue.extend({
+  data(){
+    return {
+      blogs: []
+    }
+  },
   template: `
       <div class="section section-basic">
         <div class="container">
@@ -421,95 +426,156 @@ const profilePage = Vue.component("profilePage", Vue.extend({
           </nav>
           <router-link to="/profile/blogs" class="btn btn-success btn-round">
             <i class="fa fa-plus fa-lg"></i> Yeni Blog
-          </button>
+          </router-link>
+          <searchComponent/>
+
+          <div class="container">
+            <h4>Bloglarım</h4>
+            <blogCard class="col-md-10 ml-auto col-xl-6  mr-auto" v-for="blog in blogs" :blog="blog"></blogCard>
+          
+          </div>
 
 
         </div>
       </div>
     `,
+  async beforeCreate() {
+    const response =await axios.get("/blog");
+    this.blogs = response.data.blogs;
+  },
   props: {
 
   }
 }))
 
+Vue.component("searchComponent", Vue.extend({
+
+  template: `
+  <div class="container">
+  <br/>
+  <div class="row justify-content-center">
+                        <div class="col-12 col-md-10 col-lg-8">
+                            <form class="card card-sm">
+                                <div class="card-body row no-gutters align-items-center">
+                                    <div class="col-auto">
+                                        <i class="fas fa-search h4 text-body"></i>
+                                    </div>
+                                    <!--end of col-->
+                                    <div class="col">
+                                        <input class="form-control form-control-lg form-control-borderless" type="search" placeholder="Search topics or keywords">
+                                    </div>
+                                    <!--end of col-->
+                                    <div class="col-auto">
+                                        <button class="btn btn-lg btn-success" type="submit">Search</button>
+                                    </div>
+                                    <!--end of col-->
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+  </div>
+  `
+}));
+Vue.component("blogCard", Vue.extend({
+  template: `
+
+    <div class="card" style="width:20rem" >
+      <div class="card-body" >
+        <h4 class="card-title">{{blog.title}}</h4>
+        <h6 class="card-subtitle mb-2 text-muted">{{createdAt}}</h6>
+        <p class="card-text">{{blog.description}}</p>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">  <a href="#" class="card-link">Blog sayfasına git</a></li>
+          <li class="list-group-item">  <a href="#" class="card-link">Blog sayfasına git</a></li>
+          <li class="list-group-item">  <a href="#" class="card-link">Blog sayfasına git</a></li>
+        </ul>
+      </div>
+    </div>
+    `,
+  props: ["blog"],
+  computed : {
+    createdAt(){
+      return moment(this.blog.created_at).format('DD-MM-YYYY HH:mm');
+    }
+  }
+}))
+
 
 Vue.component("formBlog", Vue.extend({
+  data(){
+    return {
+      form : {
+        title : "",
+        description: "",
+        errors: []
+      }
+    }
+
+  },
   template: `
-  <form>
+  <form v-on:submit="submit($event)">
     <div class="form-group">
       <label for="title">Blog Başlığı</label>
-      <input type="text" name="title" class="form-control"  placeholder="Blog Başlığı">
+      <input v-model="form.title" type="text" name="title" class="form-control"  placeholder="Blog Başlığı">
+    </div>
+    <div class="form-group">
+      <label for="title">Blog Tanımı</label>
+      <input v-model="form.description" type="text" name="description" class="form-control"  placeholder="Blog Tanımı">
     </div>
     <div class="form-group">
       <label for="content">Blog İçeriği</label>
-      <div  id="editor" class="form-control" >
-      </div>
-      <div id="toolbar"></div>
-
+      <textarea id="blogContent" name="content"></textarea>
     </div>
-
+    <alert ref="blogAlert"/>
     <button type="submit" class="btn btn-success"><i class="fa fa-save fa-lg"></i> Kaydet</button>
+    
   </form>
   `,
   props: {
 
   },
+  methods:  {
+    validate(){
+      this.errors = []
+      if(!this.form.title)
+        this.errors.push("Başlık alanı zorunludur.");
+      if(!this.description)
+        this.errors.push("Blog Tanımı alanı zorunludur");
+      if(!this.content)
+        this.errors.push("Blog İçeriği alanı zorunludur");
+    },
+
+    async submit(e){
+      e.preventDefault();
+      this.validate();
+      const $alert = this.$refs.blogAlert;
+      if(this.errors.length){
+        $alert.showErrorMultiple(this.errors);
+        return;
+      }
+
+      const formData = {
+        title:  this.form.title,
+        content : this.content,
+        description : this.form.description
+      }
+
+      try {
+        const result = await axios.post("/blog/save",formData);
+        router.push('/profile')
+      } catch (error) {
+        $alert.showError(error.response.data.errror);
+      }
+ 
+    }
+  },
+  computed: {
+    content() {
+      return $("#blogContent").val()
+    }
+  },
   mounted() {
-    var toolbarOptions = [
-      ['bold', 'italic', 'underline', 'strike'], // toggled buttons
-      ['blockquote', 'code-block'],
-
-      [{
-        'header': 1
-      }, {
-        'header': 2
-      }], // custom button values
-      [{
-        'list': 'ordered'
-      }, {
-        'list': 'bullet'
-      }],
-      [{
-        'script': 'sub'
-      }, {
-        'script': 'super'
-      }], // superscript/subscript
-      [{
-        'indent': '-1'
-      }, {
-        'indent': '+1'
-      }], // outdent/indent
-      [{
-        'direction': 'rtl'
-      }], // text direction
-
-      [{
-        'size': ['small', false, 'large', 'huge']
-      }], // custom dropdown
-      [{
-        'header': [1, 2, 3, 4, 5, 6, false]
-      }],
-
-      [{
-        'color': []
-      }, {
-        'background': []
-      }], // dropdown with defaults from theme
-      [{
-        'font': []
-      }],
-      [{
-        'align': []
-      }],
-
-      ['clean'] ,
-     // remove formatting button
-    ];
-    var quill = new Quill('#editor', {
-      modules: {
-        toolbar: toolbarOptions
-      },
-    });
+    $('#blogContent').summernote();
   }
 }))
 
@@ -542,7 +608,6 @@ const indexPage = Vue.component("indexPage", Vue.extend({
     <div class="container">
     <h3 class="title">Index</h3>
 
-    aaa
     </div>
   </div>
   `,
@@ -580,5 +645,6 @@ var app = new Vue({
   `,
   beforeCreate() {
     this.$store.commit('initStore');
+    axios.defaults.headers.common['JWT'] = this.$store.getters.token;
   }
 })
